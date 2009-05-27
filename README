@@ -63,6 +63,11 @@ OBJECT METHODS YOU SHOULD CARE ABOUT
       
               self.response.out.write("Hi there %s" % self.user.username)
 
+  do_flickr_auth(self, min_perms=None)
+      This method will generate and redirect the user to the Flickr
+      API Auth endpoint where the user will be prompted to approve
+      your request for a Flickr token (with 'min_perms' permissions).
+  
   do_token_dance(self, perms=None)
       This is the method you should call from your 'auth' handler; that
       is the URL that you tell the Flickr API Auth flow to redirect to
@@ -105,11 +110,6 @@ OBJECT METHODS YOU MAY CARE ABOUT
       'min_perms'.
       
       Returns True or False.
-  
-  do_flickr_auth(self, min_perms=None)
-      This method will generate and redirect the user to the Flickr
-      API Auth endpoint where the user will be prompted to approve
-      your request for a Flickr token (with 'min_perms' permissions).
   
   ffo_cookie(self, user)
       A helper method to generate the 'ffo' cookie string for a user.
