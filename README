@@ -1,0 +1,137 @@
+FlickrApp
+
+  FlickrApp is a simple base class to use with Google App Engine (GAE)
+  packages that allows you to use Flickr as a Single Sign On (SSO)
+  provider and validation service. As an extra bonus you get a Flickr
+  API Auth token in the process!
+  
+  Currently this class is designed (and tested) to work with the plain
+  vanilla GAE/Django development environment. The next step is to ensure
+  that is works with the AppDrop GAE/EC2 container.
+  
+CLASS METHODS
+  
+  __init__(self, api_key, api_secret)
+      Create a new FlickrApp object.
+      
+      Remember, this class is not meant to be used on it's own. Rather
+      it is a base class that you subclass in your own application. For
+      example:
+      
+          class MyFlickrApp (FlickrApp) :
+      
+            def init (self) :
+              api_key = "this part is left to you"
+              api_secret = "to squirt in to your application"
+      
+              FlickrApp.__init__(self, api_key, api_secret)
+  
+OBJECT METHODS YOU SHOULD CARE ABOUT
+
+  check_logged_in(self, min_perms=None)
+      Check to see if the current user is logged in. If not, force
+      them to re-authenticate your application via the Flickr API
+      Auth flow.
+      
+      Logged in is defined as having valid 'ffo' and 'fft' cookies.
+      
+      'ffo' cookies are constantly renewed for 30 days with each page
+      view and map the current user to a user in the FlickrUser database.
+      If the cookie is not present or does not validate this method
+      returns False.
+      
+      'fft' cookies last the duration of the browser session and are
+      used to ensure that the user has a token with a minimum permissions
+      set. This is done by calling the flickr.auth.checkToken method. If
+      the token does not match this method returns False.
+      
+      If both cookies validate, the object's 'user' key will be set and
+      the method will return True.
+      
+      For example:
+      
+          class MyHandler (FlickrApp) :
+      
+            # Assume __init__ here...
+            
+            def get (self) :
+              min_perms = 'read'
+      
+              if not self.check_logged_in(min_perms) :
+                self.do_flickr_auth(min_perms)
+                return
+      
+              self.response.out.write("Hi there %s" % self.user.username)
+
+  do_token_dance(self, perms=None)
+      This is the method you should call from your 'auth' handler; that
+      is the URL that you tell the Flickr API Auth flow to redirect to
+      once a user has authed your application (in magic Flickr land).
+      
+      It will check for a 'frob' parameter and then call the Flickr API
+      and exchange it for a valid Flickr Auth token.
+      
+      If something goes wrong it will return False, otherwise it will
+      redirect the user to your application's root URL (where presumably
+      you are calling 'checked_logged_in').
+      
+      For example:
+      
+          class TokenFrobHandler (FlickrApp) :
+      
+              # Assume __init__ here
+        
+              def get (self):  
+                  if not self.do_token_dance() :
+                      self.response.out.write("OH NOES! SOMETHING WENT WRONG!")
+  
+OBJECT METHODS YOU MAY CARE ABOUT
+
+  api_call(self, method, args={})
+      A helper method to call the Flickr API and return a (simple)
+      JSON object.
+      
+      If something goes wrong with the actual request, the method
+      returns False.
+      
+      'args' are the arguments you want to pass to the method. There
+      is one magic argument called 'check_response' which if True
+      (the default is False) will cause the method to ensure that the
+      API method returned 'stat=ok' returning False if it does not.
+    
+  check_token(self, min_perms)
+      A helper methof to ensure that the currently logged in user's
+      Flickr API auth token has permissions greater than or equal to
+      'min_perms'.
+      
+      Returns True or False.
+  
+  do_flickr_auth(self, min_perms=None)
+      This method will generate and redirect the user to the Flickr
+      API Auth endpoint where the user will be prompted to approve
+      your request for a Flickr token (with 'min_perms' permissions).
+  
+  ffo_cookie(self, user)
+      A helper method to generate the 'ffo' cookie string for a user.
+  
+  fft_cookie(self, user)
+      A helper method to generate the 'fft' cookie string for a user.
+  
+  generate_ffo(self, user)
+      A helper method to generate the value of the 'ffo' cookie for a user.
+  
+  generate_fft(self, user)
+      A helper method to generate the value of the 'fft' cookie for a user.
+  
+  generate_password(self, length=58)
+      A helper method to generate a new password.
+  
+  get_user_by_nsid(self, nsid)
+      A helper method to return a FlickrUser object matching a given NSID.     
+
+REQUIREMENTS
+
+  Aside from the Google AppEngine (GAE) itself, this package requires the
+  following packages:
+
+  * http://pypi.python.org/pypi/Flickr.API/
