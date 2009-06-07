@@ -16,6 +16,8 @@ import md5
 import urllib
 from urlparse import urlparse
 
+import base64
+
 #
 #
 #
@@ -60,6 +62,28 @@ class FlickrApp (webapp.RequestHandler) :
 
     self.perms_map = { 'read' : 1, 'write' : 2, 'delete' : 3 }
 
+    self.crypto = None
+    
+    self.canhas_crypto()
+    
+  def canhas_crypto (self) :
+
+    try:
+    	import Crypto
+        self.crypto = 'pycrypto'
+        return True
+    except Exception, e :
+      pass
+
+    try :
+      import pyDes
+      self.crypto = 'pydes'
+      return True
+    except Exception, e :
+      pass
+      
+    raise Exception, "no suitable libraries for generating crumbs"
+  
   def check_logged_in (self, min_perms=None) :
 
     """
@@ -352,7 +376,7 @@ class FlickrApp (webapp.RequestHandler) :
     delta = datetime.timedelta(days=30)
     then = now + delta
     expires = then.strftime("%a, %e-%b-%Y %H:%M:%S GMT")
-
+    
     ffo = self.generate_ffo(user)
     ffo_cookie = "ffo=%s; expires=%s" % (ffo, expires)
     return str(ffo_cookie)
@@ -375,10 +399,106 @@ class FlickrApp (webapp.RequestHandler) :
 
   def generate_password (self, length=58) :
 
-    """A helper method to generate a new password."""
+    """A helper method to generate a new user password."""
     
+    return self.generate_secret(length)
+  
+  def generate_secret (self, length) :
+
+    """A helper method to generate a new secret."""
+
     return binascii.b2a_base64(os.urandom(length)).strip()
 
+  def crumb_secret (self, user) :
+
+    """ tbd """
+    
+    hash = md5.new()
+    hash.update("%s%s" % (self._api_secret, user.password))
+    hex = hash.hexdigest()
+    
+    return hex[:8]
+  
+  def generate_crumb (self, user, path, ttl=20) :
+
+    """ tbd """
+    
+    # ttl is measured in minutes
+
+    fft = self.generate_fft(user)
+    secret = self.crumb_secret(user)
+    
+    now = datetime.datetime.fromtimestamp(time.time())
+    delta = datetime.timedelta(minutes=ttl)
+    then = now + delta
+    expires = then.strftime("%s")
+
+    crumb = "%s:%s:%s" % (fft, path, expires)
+    
+    enc = self.encrypt(crumb, secret)
+    return base64.b64encode(enc)
+
+  def validate_crumb(self, user, path, crumb_b64) :
+
+    """ tbd """
+    
+    secret = self.crumb_secret(user)
+    
+    crumb_enc = base64.b64decode(crumb_b64)
+    crumb_raw = self.decrypt(crumb_enc, secret)
+
+    (crumb_fft, crumb_path, crumb_expires) = crumb_raw.split(":")
+    
+    if crumb_fft != self.generate_fft(user) :
+      return 0
+
+    if crumb_path != path :
+      return 0
+    
+    if (crumb_expires < int(time.time())) :
+      return 0
+
+    return 1
+    
+  def encrypt (self, raw, secret) :
+
+    """ tbd """
+
+    if self.crypto == 'pycrypto' :
+      
+      from Crypto.Cipher import DES
+      des = DES.new(secret, DES.MODE_ECB)
+
+      while len(raw) % 8 :
+        raw += "*"
+        
+      enc = des.encrypt(raw)
+    
+    else :
+      des = pyDes.des(secret)
+      enc = des.encrypt(raw, "*")
+
+    return enc
+  
+  def decrypt (self, enc, secret) :
+
+    """ tbd """
+
+    if self.crypto == 'pycrypto' :
+
+      from Crypto.Cipher import DES
+      des = DES.new(secret, DES.MODE_ECB)
+      raw = des.encrypt(enc)
+
+      raw = raw.split("*")
+      raw = raw[0]
+      
+    else :
+      des = pyDes.des(secret)
+      raw = des.decrypt(enc, "*")
+
+    return raw
+    
 #
 #
 #
