@@ -38,3 +38,8 @@ class dbFlickrUserBlocked (db.Model) :
   blocker_nsid = db.StringProperty()
   blocked_nsid = db.StringProperty()
   date_blocked = db.DateTimeProperty(auto_now_add=True)
+
+class dbFlickrUserMembership (db.Model) :
+
+  nsid = db.StringProperty()
+  opted_out = db.BooleanProperty()  
