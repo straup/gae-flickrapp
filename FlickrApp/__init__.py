@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
-import wsgiref.handlers
-
 from google.appengine.ext import webapp
-from google.appengine.ext import db
 from django.utils import simplejson
 
+import FlickrApp.User as User
 from Flickr import API as flickr
 
 import os
@@ -17,7 +15,9 @@ import urllib
 from urlparse import urlparse
 
 import base64
+import FlickrApp.ext.pyDes as pyDes
 
+      
 #
 #
 #
@@ -75,14 +75,8 @@ class FlickrApp (webapp.RequestHandler) :
     except Exception, e :
       pass
 
-    try :
-      import pyDes
-      self.crypto = 'pydes'
-      return True
-    except Exception, e :
-      pass
-      
-    raise Exception, "no suitable libraries for generating crumbs"
+    self.crypto = 'pydes'
+    return True
   
   def check_logged_in (self, min_perms=None) :
 
@@ -131,13 +125,13 @@ class FlickrApp (webapp.RequestHandler) :
 
     if len(whoami) != 2 :
       return False
-    
-    users = db.GqlQuery("SELECT * FROM FlickrUser WHERE password = :1", whoami[1])
 
-    if users.count() == 0 :
+    user = User.get_user_by_password(whoami[1])
+
+    if not user :
       return False
 
-    self.user = users.get()
+    self.user = user
 
     if str(self.user.key()) != str(whoami[0]) :
       return False
@@ -171,7 +165,7 @@ class FlickrApp (webapp.RequestHandler) :
     
     return True
 
-  def do_flickr_auth (self, min_perms=None) :
+  def do_flickr_auth (self, min_perms=None, redir=None) :
 
     """
     This method will generate and redirect the user to the Flickr
@@ -181,11 +175,18 @@ class FlickrApp (webapp.RequestHandler) :
   
     args = {'api_key' : self._api_key}
 
-    redir = 'redir=%s' % urllib.quote(self.request.path)
-    args['extra'] = redir
-
-    # token-crumb, maybe?
+    extra = []
     
+    if redir :
+      extra.append('redir=%s' % redir)
+    else :
+      extra.append('redir=%s' % urllib.quote(self.request.path))
+
+    crumb = self.generate_crumb(None, 'flickrauth', 5)
+    extra.append('crumb=%s' % urllib.quote(crumb))
+    
+    args['extra'] = "&".join(extra)
+
     if min_perms:
       args['perms'] = min_perms
 
@@ -236,7 +237,14 @@ class FlickrApp (webapp.RequestHandler) :
     	extra = urlparse(extra)
         e_params = dict([part.split('=') for part in extra[2].split('&')])
 
-    # token-crumb, maybe?
+    #
+    
+    crumb = urllib.unquote(e_params['crumb'])
+    
+    if not self.validate_crumb(None, 'flickrauth', crumb) :
+    	return False
+
+    #
     
     args = {'frob': frob, 'check_response' : True}
     rsp = self.api_call('flickr.auth.getToken', args)
@@ -250,24 +258,29 @@ class FlickrApp (webapp.RequestHandler) :
     perms = rsp['auth']['perms']['_content']
     user_perms = self.perms_map[perms]
     
-    user = self.get_user_by_nsid(nsid)
+    user = User.get_user_by_nsid(nsid)
       
     if not user :
-      user_pswd = self.generate_password()
-      
-      user = FlickrUser()
-      user.password = user_pswd
-      user.token = token
-      user.username = name
-      user.nsid = nsid
-      user.perms = user_perms
-      user.put()
-    else :
 
-      user.token = token
-      user.perms = user_perms
-      user.username = name
-      user.put()
+    	args = {
+        'password' : self.generate_password(),
+        'token' : token,
+        'username' : name,
+        'nsid' : nsid,
+        'perms' : user_perms,
+        }
+      
+        user = User.create(args)
+
+    else :
+    
+    	credentials = {
+        'token' : token,
+        'perms' : user_perms,
+        'username' : name,
+        }
+    
+    User.update_credentials(user, credentials)
 
     self.response.headers.add_header('Set-Cookie', self.ffo_cookie(user))
     self.response.headers.add_header('Set-Cookie', self.fft_cookie(user))    
@@ -276,19 +289,6 @@ class FlickrApp (webapp.RequestHandler) :
     	self.redirect(e_params['redir'])
     else :
   	self.redirect("/")
-
-  def get_user_by_nsid (self, nsid) :
-
-    """
-    A helper method to return a FlickrUser object matching a given NSID.
-    """
-    
-    users = db.GqlQuery("SELECT * FROM FlickrUser WHERE nsid = :1", nsid)
-
-    if users.count() == 0 :
-      return None
-
-    return users.get()
         
   def api_call (self, method, args={}) :
 
@@ -384,9 +384,14 @@ class FlickrApp (webapp.RequestHandler) :
   def generate_fft (self, user) :
 
     """A helper method to generate the value of the 'fft' cookie for a user."""
-    
+
+    if user :
+      fft = "%s-%s-%s" % (self._api_secret, user.token, user.perms)
+    else :
+      fft = "%s-%s" % (self._api_secret, self.request.remote_addr)
+      
     hash = md5.new()
-    hash.update("%s-%s-%s" % (self._api_secret, user.token, user.perms))
+    hash.update(fft)
     return hash.hexdigest()
 
   def fft_cookie (self, user) :
@@ -412,14 +417,19 @@ class FlickrApp (webapp.RequestHandler) :
   def crumb_secret (self, user) :
 
     """ tbd """
-    
+
+    if user : 
+      secret = "%s%s" % (self._api_secret, user.password)
+    else :
+      secret = "%s%s" % (self._api_secret, self.request.user_agent)
+      
     hash = md5.new()
-    hash.update("%s%s" % (self._api_secret, user.password))
+    hash.update(secret)
     hex = hash.hexdigest()
     
     return hex[:8]
   
-  def generate_crumb (self, user, path, ttl=20) :
+  def generate_crumb (self, user, path, ttl=120) :
 
     """ tbd """
     
@@ -427,17 +437,18 @@ class FlickrApp (webapp.RequestHandler) :
 
     fft = self.generate_fft(user)
     secret = self.crumb_secret(user)
-    
+      
     now = datetime.datetime.fromtimestamp(time.time())
     delta = datetime.timedelta(minutes=ttl)
     then = now + delta
     expires = then.strftime("%s")
 
     crumb = "%s:%s:%s" % (fft, path, expires)
-    
     enc = self.encrypt(crumb, secret)
-    return base64.b64encode(enc)
 
+    b64 = base64.b64encode(enc)
+    return b64
+  
   def validate_crumb(self, user, path, crumb_b64) :
 
     """ tbd """
@@ -450,15 +461,15 @@ class FlickrApp (webapp.RequestHandler) :
     (crumb_fft, crumb_path, crumb_expires) = crumb_raw.split(":")
     
     if crumb_fft != self.generate_fft(user) :
-      return 0
+      return False
 
     if crumb_path != path :
-      return 0
+      return False
     
-    if (crumb_expires < int(time.time())) :
-      return 0
+    if (int(crumb_expires) < int(time.time())) :
+      return False
 
-    return 1
+    return True
     
   def encrypt (self, raw, secret) :
 
@@ -498,42 +509,3 @@ class FlickrApp (webapp.RequestHandler) :
       raw = des.decrypt(enc, "*")
 
     return raw
-    
-#
-#
-#
-
-class FlickrUser (db.Model) :
-
-  """FlickrUser is a simple data model for storing Flickr specific
-  information about users. It has the following properties:
-
-  * nsid - The user's Flickr NSID.
-  
-  * username - The user's Flickr screen name.
-
-  * token - A Flickr API auth token for the user.
-
-  * perms - The permissions that the Flickr API auth token
-    was created with.
-
-  * email - this is empty by default and left up to application's
-    to handle; it just seemed like one of those things that might
-    be handy.
-
-  * created - A Google AppEngine DateTimeProperty representing
-    when the (FlickrUser/App) record was created.
-    
-  * password - a 'password' for the user; used internally
-
-  """
-  
-  password = db.StringProperty()
-  token = db.StringProperty()
-  perms = db.IntegerProperty()
-  username = db.StringProperty()
-  nsid = db.StringProperty()
-  email = db.EmailProperty()
-  created = db.DateTimeProperty(auto_now_add=True)  
-
-  # maybe add a token-crumb to be extra pedantic about token requests?
