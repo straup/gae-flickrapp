@@ -1,9 +1,8 @@
-#!/usr/bin/env python
-
 from google.appengine.ext import webapp
 from django.utils import simplejson
 
 import FlickrApp.User as User
+
 from Flickr import API as flickr
 
 import os
@@ -15,9 +14,8 @@ import urllib
 from urlparse import urlparse
 
 import base64
-import FlickrApp.ext.pyDes as pyDes
+from FlickrApp.ext import pyDes
 
-      
 #
 #
 #
@@ -74,7 +72,7 @@ class FlickrApp (webapp.RequestHandler) :
         return True
     except Exception, e :
       pass
-
+    
     self.crypto = 'pydes'
     return True
   
@@ -444,11 +442,10 @@ class FlickrApp (webapp.RequestHandler) :
     expires = then.strftime("%s")
 
     crumb = "%s:%s:%s" % (fft, path, expires)
+    
     enc = self.encrypt(crumb, secret)
+    return base64.b64encode(enc)
 
-    b64 = base64.b64encode(enc)
-    return b64
-  
   def validate_crumb(self, user, path, crumb_b64) :
 
     """ tbd """
