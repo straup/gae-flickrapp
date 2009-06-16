@@ -31,6 +31,7 @@ class dbFlickrUser (db.Model) :
   username = db.StringProperty()
   nsid = db.StringProperty()
   email = db.EmailProperty()
+  buddyicon_url = db.StringProperty()
   created = db.DateTimeProperty(auto_now_add=True)  
 
 class dbFlickrUserBlocked (db.Model) :

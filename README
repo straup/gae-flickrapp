@@ -89,46 +89,12 @@ OBJECT METHODS YOU SHOULD CARE ABOUT
               def get (self):  
                   if not self.do_token_dance() :
                       self.response.out.write("OH NOES! SOMETHING WENT WRONG!")
-  
-OBJECT METHODS YOU MAY CARE ABOUT
 
-  api_call(self, method, args={})
-      A helper method to call the Flickr API and return a (simple)
-      JSON object.
-      
-      If something goes wrong with the actual request, the method
-      returns False.
-      
-      'args' are the arguments you want to pass to the method. There
-      is one magic argument called 'check_response' which if True
-      (the default is False) will cause the method to ensure that the
-      API method returned 'stat=ok' returning False if it does not.
-    
-  check_token(self, min_perms)
-      A helper methof to ensure that the currently logged in user's
-      Flickr API auth token has permissions greater than or equal to
-      'min_perms'.
-      
-      Returns True or False.
-  
-  ffo_cookie(self, user)
-      A helper method to generate the 'ffo' cookie string for a user.
-  
-  fft_cookie(self, user)
-      A helper method to generate the 'fft' cookie string for a user.
-  
-  generate_ffo(self, user)
-      A helper method to generate the value of the 'ffo' cookie for a user.
-  
-  generate_fft(self, user)
-      A helper method to generate the value of the 'fft' cookie for a user.
-  
-  generate_password(self, length=58)
-      A helper method to generate a new password.
-  
-  get_user_by_nsid(self, nsid)
-      A helper method to return a FlickrUser object matching a given NSID.     
+EVERYTHING ELSE
 
+Everything is a bit up in the air still. The documentation will be updated when
+the dust settles.
+  
 REQUIREMENTS
 
   Aside from the Google AppEngine (GAE) itself, this package requires the

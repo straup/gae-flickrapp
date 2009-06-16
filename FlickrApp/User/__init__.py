@@ -28,6 +28,12 @@ def create (args) :
     
     return user
 
+# Please, write a proper 'update' method...
+
+def set_buddyicon_url (user, url) :
+    user.buddyicon_url = url
+    user.put()
+    
 def update_credentials (user, creds) :
 
     user.token = creds['token']

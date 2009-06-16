@@ -61,17 +61,14 @@ class FlickrApp (webapp.RequestHandler) :
     self.perms_map = { 'read' : 1, 'write' : 2, 'delete' : 3 }
 
     self.crypto = None
-    
     self.canhas_crypto()
     
   def canhas_crypto (self) :
 
-    try:
-    	import Crypto
-        self.crypto = 'pycrypto'
-        return True
-    except Exception, e :
-      pass
+    # A placeholder for some imaginary better day...
+    # This isn't necessarily fast but then it doesn't
+    # really need to be so let's just go with the
+    # simple thing for now.
     
     self.crypto = 'pydes'
     return True
@@ -278,7 +275,7 @@ class FlickrApp (webapp.RequestHandler) :
         'username' : name,
         }
     
-    User.update_credentials(user, credentials)
+        User.update_credentials(user, credentials)
 
     self.response.headers.add_header('Set-Cookie', self.ffo_cookie(user))
     self.response.headers.add_header('Set-Cookie', self.fft_cookie(user))    
@@ -450,13 +447,19 @@ class FlickrApp (webapp.RequestHandler) :
 
     """ tbd """
     
-    secret = self.crumb_secret(user)
-    
+    secret = self.crumb_secret(user)    
+
     crumb_enc = base64.b64decode(crumb_b64)
     crumb_raw = self.decrypt(crumb_enc, secret)
 
-    (crumb_fft, crumb_path, crumb_expires) = crumb_raw.split(":")
-    
+    if not crumb_raw :
+      return False
+
+    try :
+      (crumb_fft, crumb_path, crumb_expires) = crumb_raw.split(":")
+    except Exception, e :
+      return False
+
     if crumb_fft != self.generate_fft(user) :
       return False
 
@@ -472,19 +475,8 @@ class FlickrApp (webapp.RequestHandler) :
 
     """ tbd """
 
-    if self.crypto == 'pycrypto' :
-      
-      from Crypto.Cipher import DES
-      des = DES.new(secret, DES.MODE_ECB)
-
-      while len(raw) % 8 :
-        raw += "*"
-        
-      enc = des.encrypt(raw)
-    
-    else :
-      des = pyDes.des(secret)
-      enc = des.encrypt(raw, "*")
+    des = pyDes.des(secret)
+    enc = des.encrypt(raw, "*")
 
     return enc
   
@@ -492,17 +484,7 @@ class FlickrApp (webapp.RequestHandler) :
 
     """ tbd """
 
-    if self.crypto == 'pycrypto' :
-
-      from Crypto.Cipher import DES
-      des = DES.new(secret, DES.MODE_ECB)
-      raw = des.encrypt(enc)
-
-      raw = raw.split("*")
-      raw = raw[0]
-      
-    else :
-      des = pyDes.des(secret)
-      raw = des.decrypt(enc, "*")
+    des = pyDes.des(secret)
+    raw = des.decrypt(enc, "*")
 
     return raw
