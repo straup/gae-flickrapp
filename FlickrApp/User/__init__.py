@@ -24,6 +24,14 @@ def create (args) :
     user.username = args['username']
     user.nsid = args['nsid']
     user.perms = args['perms']
+
+    # A combination of empty strings being created as <null>
+    # values and still being uncertain what the best way to
+    # test things is in django template land...
+    
+    user.buddyicon_url = ''
+    user.path_alias = ''
+    
     user.put()
     
     return user
@@ -32,6 +40,10 @@ def create (args) :
 
 def set_buddyicon_url (user, url) :
     user.buddyicon_url = url
+    user.put()
+
+def set_path_alias (user, path_alias) :
+    user.path_alias = path_alias
     user.put()
     
 def update_credentials (user, creds) :
