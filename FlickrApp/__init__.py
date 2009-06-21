@@ -13,6 +13,9 @@ import md5
 import urllib
 from urlparse import urlparse
 
+import string
+import random
+
 import base64
 from FlickrApp.ext import pyDes
 
@@ -402,7 +405,26 @@ class FlickrApp (webapp.RequestHandler) :
     """A helper method to generate a new user password."""
     
     return self.generate_secret(length)
-  
+
+  def generate_confirmation_code (self, length) :
+
+    """A helper method to generate URL safe confirmation codes."""
+    
+    code = self.generate_secret(length)
+    code = code.replace("/", self.generate_alpha())
+    code = code.replace("+", self.generate_alpha())
+    code = code.replace("=", self.generate_alpha())       
+    return code
+
+  def generate_alpha (self) :
+
+    """A helper method to generate a random alpha character."""
+    
+    if int(time.time()) % 2 :
+      return string.lowercase[random.randint(0, len(string.uppercase)-1)]
+    
+    return string.uppercase[random.randint(0, len(string.lowercase)-1)]    
+
   def generate_secret (self, length) :
 
     """A helper method to generate a new secret."""
