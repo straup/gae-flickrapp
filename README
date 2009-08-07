@@ -97,7 +97,4 @@ the dust settles.
   
 REQUIREMENTS
 
-  Aside from the Google AppEngine (GAE) itself, this package requires the
-  following packages:
-
-  * http://pypi.python.org/pypi/Flickr.API/
+  Just the Google AppEngine (GAE) package itself.
