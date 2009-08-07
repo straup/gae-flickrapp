@@ -3,8 +3,6 @@ from django.utils import simplejson
 
 import FlickrApp.User as User
 
-from Flickr import API as flickr
-
 import os
 import binascii
 import time
@@ -17,7 +15,9 @@ import string
 import random
 
 import base64
+
 from FlickrApp.ext import pyDes
+from FlickrApp.ext.Flickr import API as flickr
 
 #
 #
@@ -197,6 +197,9 @@ class FlickrApp (webapp.RequestHandler) :
 
     self.redirect(url)
 
+  def flickr_sign_args (self, args) :
+    return flickr.sign_args(self._api_secret, args)
+    
   def do_token_dance (self, perms=None) :
 
     """
