@@ -1,0 +1,23 @@
+This is just about the simplest example, or HelloWorld, application you can
+build with FlickrApp.
+
+FlickrApp itself has a variety of other helper methods but this is the short and
+sweet example to get you started.
+
+This example application will do nothing more than check to see if you're signed
+in and offer to log you in if you're not and log you out if you are.
+
+You will need:
+
+* A valid Flickr API key, registered as a web application. Both the API key and
+  the application secret will need to be added to the config.py file.
+
+  If you don't have a Flickr API key, you can get one here:
+
+  http://www.flickr.com/services/api/keys/apply/
+
+* A valid GAE account and a recent version of the GAE SDK for Python (>= 1.2.3)
+  which can be downloaded from:
+
+  http://code.google.com/appengine/downloads.html
+
