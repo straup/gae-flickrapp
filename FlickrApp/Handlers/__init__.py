@@ -57,6 +57,9 @@ class FlickrAppRequest (FlickrApp) :
         browser['iphone'] = True
         browser['mobile'] = True            
 
+    # browser['iphone'] = True
+    # browser['mobile'] = True            
+
     self.assign('user_agent', uastring)
     self.assign('browser', browser)
     

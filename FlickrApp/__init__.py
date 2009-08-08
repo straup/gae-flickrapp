@@ -52,7 +52,7 @@ class FlickrApp (webapp.RequestHandler) :
 
             FlickrApp.__init__(self, api_key, api_secret)
     """
-    
+
     webapp.RequestHandler.__init__(self)
     
     self._api_key = api_key
