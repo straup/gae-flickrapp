@@ -1,13 +1,28 @@
-This is just about the simplest example, or HelloWorld, application you can
+This is just about the simplest example (HelloWorld style) application you can
 build with FlickrApp.
 
 FlickrApp itself has a variety of other helper methods but this is the short and
 sweet example to get you started.
 
-This example application will do nothing more than check to see if you're signed
-in and offer to log you in if you're not and log you out if you are.
+This application will do nothing more than check to see if you're signed in and
+offer to log you in if you're not and log you out if you are. 
 
 You will need:
+
+* A copy of the FlickrApp package in your application's root directory; the one
+  that contains main.py and friends. For example:
+
+  ls -al example/
+  total 48
+  drwxr-xr-x  9 foo  bar   306 Aug  8 08:48 .
+  drwxr-xr-x  8 foo  bar   272 Aug  8 08:30 ..
+  lrwxr-xr-x  1 foo  bar    45 Aug  8 08:48 FlickrApp -> /usr/lib/python/gae-FlickrApp/FlickrApp
+  drwxr-xr-x  3 foo  bar   102 Aug  8 08:45 HelloWorld
+  -rw-r--r--  1 foo  bar  1377 Aug  8 08:48 README
+  -rw-r-----@ 1 foo  bar   109 Aug  8 08:02 app.yaml
+  -rw-r--r--  1 foo  bar   168 Aug  8 08:41 config.py
+  -rw-r-----  1 foo  bar   471 Aug  8 08:26 index.yaml
+  -rwxr-x---  1 foo  bar   463 Aug  8 08:41 main.py
 
 * A valid Flickr API key, registered as a web application. Both the API key and
   the application secret will need to be added to the config.py file.
