@@ -1,6 +1,14 @@
 from google.appengine.ext import db
 from FlickrApp.Tables import dbFlickrUser
 
+def get_all_users() :
+
+    # FIX ME: proper counts/ pagination
+    rsp = db.GqlQuery("SELECT * FROM dbFlickrUser")
+    users = rsp.fetch(rsp.count())
+
+    return users
+    
 def get_user_by_password (password) :
 
     users = db.GqlQuery("SELECT * FROM dbFlickrUser WHERE password = :1", password)
