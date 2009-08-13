@@ -19,6 +19,8 @@ import base64
 from FlickrApp.ext import pyDes
 from FlickrApp.ext.Flickr import API as flickr
 
+import logging
+
 #
 #
 #
@@ -314,14 +316,16 @@ class FlickrApp (webapp.RequestHandler) :
       
     args['format'] = 'json'
     args['nojsoncallback'] = 1
-
+    
     try :
       res = self.api.execute_method(method=method, args=args)
       json = simplejson.loads(res.read())
-    except Exception:
+    except Exception, e:
+      logging.error("[flickrapp] Flickr API call %s failed: %s" % (method, e))
       return None
-    
+
     if check_response and json['stat'] != 'ok' :
+      logging.warning("[flickrapp] Flickr API call %s did not return OK" % method)
       return None
 
     return json
