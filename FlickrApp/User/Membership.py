@@ -25,10 +25,18 @@ def create (nsid) :
     
     return user
         
-def opt_in (user) :
-    user.opted_out = False
-    user.put()
+def opt_in (nsid) :
+
+    user = retrieve(nsid)
+
+    if user :
+        user.opted_out = False
+        user.put()
     
-def opt_out (user) :
-    user.opted_out = True
-    user.put()
+def opt_out (nsid) :
+
+    user = retrieve(nsid)
+
+    if user :
+        user.opted_out = True
+        user.put()

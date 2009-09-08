@@ -16,21 +16,21 @@ def get_user_by_password (password) :
 
 def get_user_by_username (username) :
 
-    users = db.GqlQuery("SELECT * FROM dbFlickrUser WHERE username = :1", username)
+    users = db.GqlQuery("SELECT * FROM dbFlickrUser WHERE username = :1", username.strip())
     return users.get()
     
 def get_user_by_nsid (nsid) :
     
-    users = db.GqlQuery("SELECT * FROM dbFlickrUser WHERE nsid = :1", nsid)
+    users = db.GqlQuery("SELECT * FROM dbFlickrUser WHERE nsid = :1", nsid.strip())
     return users.get()
 
 def create (args) :
 
     user = dbFlickrUser()
-    user.password = args['password']
-    user.token = args['token']
-    user.username = args['username']
-    user.nsid = args['nsid']
+    user.password = args['password'].strip()
+    user.token = args['token'].strip()
+    user.username = args['username'].strip()
+    user.nsid = args['nsid'].strip()
     user.perms = args['perms']
 
     # A combination of empty strings being created as <null>

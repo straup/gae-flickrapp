@@ -1,4 +1,6 @@
 from google.appengine.ext import webapp
+from google.appengine.api import memcache
+
 from django.utils import simplejson
 
 import FlickrApp.User as User
@@ -329,10 +331,28 @@ class FlickrApp (webapp.RequestHandler) :
       return None
 
     return json
-  
+
+  def proxy_api_call (self, method, args, ttl=0) :
+
+    args['method'] = method
+    sig = flickr.sign_args(self._api_secret, args)      
+    
+    memkey = "%s_%s" % (method, sig)
+    cache = memcache.get(memkey)
+    
+    if cache :
+      return cache
+    
+    rsp = self.api_call(method, args)
+    
+    if rsp['stat'] == 'ok' :
+      memcache.add(memkey, rsp, ttl)
+      
+    return rsp
+    
   def check_token (self, min_perms) :
 
-    """A helper methof to ensure that the currently logged in user's
+    """A helper method to ensure that the currently logged in user's
     Flickr API auth token has permissions greater than or equal to
     'min_perms'.
 
