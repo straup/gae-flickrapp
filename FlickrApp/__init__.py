@@ -344,6 +344,9 @@ class FlickrApp (webapp.RequestHandler) :
       return cache
     
     rsp = self.api_call(method, args)
+
+    if not rsp :
+      return None
     
     if rsp['stat'] == 'ok' :
       memcache.add(memkey, rsp, ttl)
