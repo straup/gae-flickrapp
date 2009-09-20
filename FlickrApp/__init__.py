@@ -476,7 +476,7 @@ class FlickrApp (webapp.RequestHandler) :
     
     return hex[:8]
   
-  def generate_crumb (self, user, path, ttl=120) :
+  def generate_crumb (self, user, path, ttl=30) :
 
     """ tbd """
     

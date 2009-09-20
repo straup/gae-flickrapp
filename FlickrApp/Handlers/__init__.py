@@ -3,6 +3,7 @@ import FlickrApp.User.Membership as Membership
 
 from google.appengine.ext.webapp import template
 import os.path
+import copy
 
 from FlickrApp.ext.Flickr import API as flickr
 
@@ -17,7 +18,12 @@ class FlickrAppRequest (FlickrApp) :
 
     self.config = config
     self.min_perms = config['flickr_minperms']
+    
+    self.config_pub = copy.deepcopy(config)
+    del(self.config_pub['flickr_apisecret'])  
 
+    self.log(self.config_pub, 'info')
+    
     self.membership = None
     self.template_values = {}
 
@@ -66,8 +72,8 @@ class FlickrAppRequest (FlickrApp) :
     #
     # but at least for now, it is and it does...
     #
-    
-    self.assign("config", self.config)
+
+    self.assign("config", self.config_pub)
     self.assign("host", self.request.host)
     self.assign("host_url", self.request.host_url)    
     self.assign("path_info", self.request.path_info)
