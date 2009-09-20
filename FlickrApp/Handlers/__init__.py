@@ -21,8 +21,6 @@ class FlickrAppRequest (FlickrApp) :
     
     self.config_pub = copy.deepcopy(config)
     del(self.config_pub['flickr_apisecret'])  
-
-    self.log(self.config_pub, 'info')
     
     self.membership = None
     self.template_values = {}
