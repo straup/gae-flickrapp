@@ -56,10 +56,27 @@ class MainApp(HelloWorldApp) :
 
 class TokenDance (HelloWorldApp) :
 
-  def get (self):  
-    if not self.do_token_dance() :
-      self.response.out.write('Ack! Flickr Auth Token dance failed.')
+    def get (self):
 
+        try :
+
+            new_users = True
+            self.do_token_dance(allow_new_users=new_users)
+            
+        except FlickrApp.FlickrAppNewUserException, e :
+            self.response.out.write('New user signups are currently disabled.')
+
+        except FlickrApp.FlickrAppAPIException, e :
+            self.response.out.write('The Flickr API is being cranky.')
+
+        except FlickrApp.FlickrAppException, e :
+            self.response.out.write('Application error: %s' % e)
+      
+        except Exception, e:
+            self.response.out.write('Unknown error: %s' % e)
+
+        return
+    
 # This is where you send a user to sign in. If they are not
 # already authed then the application will take care generating
 # Flickr Auth frobs and other details.

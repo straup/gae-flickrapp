@@ -2,8 +2,7 @@ from google.appengine.ext import webapp
 from google.appengine.api import memcache
 
 from django.utils import simplejson
-
-import FlickrApp.User as User
+import User
 
 import os
 import binascii
@@ -25,6 +24,27 @@ import logging
 
 #
 #
+#
+
+class FlickrAppException (Exception) :
+  def __init__(self, value):
+    self.value = value
+    
+  def __str__(self):
+    return repr(self.value)
+
+class FlickrAppAPIException (FlickrAppException) :
+  def __init__(self, value):
+    self.value = value
+
+class FlickrAppCrumbException (FlickrAppException) :
+  def __init__(self, value):
+    self.value = value
+
+class FlickrAppNewUserException (FlickrAppException) :
+  def __init__(self, value=''):
+    self.value = value
+
 #
 
 class FlickrApp (webapp.RequestHandler) :
@@ -174,7 +194,7 @@ class FlickrApp (webapp.RequestHandler) :
     API Auth endpoint where the user will be prompted to approve
     your request for a Flickr token (with 'min_perms' permissions).
     """
-  
+
     args = {'api_key' : self._api_key}
 
     extra = []
@@ -204,7 +224,7 @@ class FlickrApp (webapp.RequestHandler) :
   def flickr_sign_args (self, args) :
     return flickr.sign_args(self._api_secret, args)
     
-  def do_token_dance (self, perms=None) :
+  def do_token_dance (self, **args) :
 
     """
     This is the method you should call from your 'auth' handler; that
@@ -224,16 +244,40 @@ class FlickrApp (webapp.RequestHandler) :
 
       # Assume __init__ here
       
-      def get (self):  
-        if not self.do_token_dance() :
-          self.response.out.write("OH NOES! SOMETHING WENT WRONG!")
-    
+      def get (self):
+
+        try :
+
+          new_users = True
+          self.do_token_dance(allow_new_users=new_users)
+
+        except FlickrApp.FlickrAppNewUserException, e :
+
+          self.assign('error', 'no_new_users')
+
+        except FlickrApp.FlickrAppAPIException, e :
+
+          self.assign('error', 'api_error')
+
+        except FlickrApp.FlickrAppException, e :
+
+          self.assign('error', 'app_error')
+          self.assign('error_message', e)      
+      
+        except Exception, e:
+
+          self.assign('error', 'unknown')      
+          self.assign('error_message', e)
+      
+        self.display("token_dance.html")        
+        return
+
     """
     
     frob = self.request.get('frob')
 
     if not frob or frob == '' :
-      return False
+      raise FlickrAppException('Missing frob!')
 
     extra = self.request.get('extra')
     e_params = {}
@@ -247,15 +291,16 @@ class FlickrApp (webapp.RequestHandler) :
     crumb = urllib.unquote(e_params['crumb'])
     
     if not self.validate_crumb(None, 'flickrauth', crumb) :
-    	return False
+        raise FlickrAppCrumbException('Invalid crumb')
 
     #
     
-    args = {'frob': frob, 'check_response' : True}
-    rsp = self.api_call('flickr.auth.getToken', args)
+    api_args = {'frob': frob, 'check_response' : True}
+
+    rsp = self.api_call('flickr.auth.getToken', api_args)
 
     if not rsp :
-    	return False
+        raise FlickrAppAPIException('Failed to get token')    
         
     token = rsp['auth']['token']['_content']
     name = rsp['auth']['user']['username']
@@ -264,7 +309,11 @@ class FlickrApp (webapp.RequestHandler) :
     user_perms = self.perms_map[perms]
     
     user = User.get_user_by_nsid(nsid)
-      
+
+    if not user :
+    	if args.has_key('allow_new_users') and not args['allow_new_users'] : 
+            raise FlickrAppNewUserException()        
+
     if not user :
 
     	args = {
@@ -342,7 +391,7 @@ class FlickrApp (webapp.RequestHandler) :
     
     if cache :
       return cache
-    
+
     rsp = self.api_call(method, args)
 
     if not rsp :
