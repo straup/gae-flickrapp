@@ -87,7 +87,9 @@ OBJECT METHODS YOU SHOULD CARE ABOUT
               # Assume __init__ here
         
               def get (self):  
-                  if not self.do_token_dance() :
+                  try :
+                      self.do_token_dance() :
+                  except Exception, e :
                       self.response.out.write("OH NOES! SOMETHING WENT WRONG!")
 
 EVERYTHING ELSE
