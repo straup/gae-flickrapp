@@ -46,7 +46,7 @@ Sample usage:
 
 	# upload
 	photo = open('photo.jpg', 'rb')
-	upload_request = Flickr.API.Request(url="http://api.flickr.com/services/upload", auth_token=token, title='test upload', photo=photo)
+	upload_request = Flickr.API.Request("http://api.flickr.com/services/upload", auth_token=token, title='test upload', photo=photo)
 	upload_response = api.execute_request(upload_request, sign=True, encode=Flickr.API.encode_multipart_formdata)
 
 	# or upload this way
@@ -54,9 +54,14 @@ Sample usage:
 """
 
 __author__ = "Gilad Raphaelli"
-__version__ = "0.4.1"
+__version__ = "0.4.3"
 
-import md5,mimetypes,urllib,urllib2
+try:
+	import hashlib
+except ImportError:
+	import md5 as hashlib
+
+import mimetypes,urllib,urllib2
 import warnings
 import API
 
@@ -106,7 +111,7 @@ def sign_args(secret, args):
 		if args[key] is not None:
 			sig += str(args[key])
 
-	return md5.new(sig).hexdigest()
+	return hashlib.md5(sig).hexdigest()
 	
 class APIError(Exception): pass
 class APIWarning(RuntimeWarning): pass
@@ -129,7 +134,7 @@ class API:
 		except IOError, (e.no, e.msg):
 			raise APIError, "Unable to open %s - %s: %s" % (filename, e.no, e.msg)
 			
-		return self.execute_request(Request(url='http://api.flickr.com/services/upload/',**args), sign=True, encode=encode_multipart_formdata)
+		return self.execute_request(Request('http://api.flickr.com/services/upload/',**args), sign=True, encode=encode_multipart_formdata)
 
 	def execute_request(self, request, sign=True, encode=encode_urlencode):
 		""" Given a Flickr.API.Request return a Flickr.API.Response, altering
@@ -190,8 +195,8 @@ class API:
 
 class Request(urllib2.Request):
 	""" A request to the Flickr API subclassed from urllib2.Request allowing for custom proxy, cache, headers, etc """
-	def __init__(self, url='http://api.flickr.com/services/rest/', **args):
-		urllib2.Request.__init__(self, url=url)
+	def __init__(self, apiurl='http://api.flickr.com/services/rest/', **args):
+		urllib2.Request.__init__(self, url=apiurl)
 		self.args = args
 
 if (__name__ == '__main__'):

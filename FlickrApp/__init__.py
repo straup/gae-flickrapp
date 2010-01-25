@@ -360,19 +360,24 @@ class FlickrApp (webapp.RequestHandler) :
     """
 
     check_response = False
-    
+
     if args.has_key('check_response') :
       check_response = args['check_response']
       del(args['check_response'])
-      
+
     args['format'] = 'json'
     args['nojsoncallback'] = 1
-    
+
     try :
       res = self.api.execute_method(method=method, args=args)
       json = simplejson.loads(res.read())
     except Exception, e:
-      logging.error("[flickrapp] Flickr API call %s failed: %s" % (method, e))
+
+      logging.error("[flickrapp] Flickr API call %s failed: %s (%s)" % (method, e, type(e)))
+
+      if not check_response :
+        return { 'stat' : 'fail', 'message' : 'Flickr API call failed (AppEngine says "%s")' % e, 'code' : 999 }
+
       return None
 
     if check_response and json['stat'] != 'ok' :
@@ -384,11 +389,11 @@ class FlickrApp (webapp.RequestHandler) :
   def proxy_api_call (self, method, args, ttl=0) :
 
     args['method'] = method
-    sig = flickr.sign_args(self._api_secret, args)      
-    
+    sig = flickr.sign_args(self._api_secret, args)
+
     memkey = "%s_%s" % (method, sig)
     cache = memcache.get(memkey)
-    
+
     if cache :
       return cache
 
@@ -396,12 +401,12 @@ class FlickrApp (webapp.RequestHandler) :
 
     if not rsp :
       return None
-    
+
     if rsp['stat'] == 'ok' :
       memcache.add(memkey, rsp, ttl)
-      
+
     return rsp
-    
+
   def check_token (self, min_perms) :
 
     """A helper method to ensure that the currently logged in user's
@@ -441,19 +446,19 @@ class FlickrApp (webapp.RequestHandler) :
   def generate_ffo (self, user) :
 
     """A helper method to generate the value of the 'ffo' cookie for a user."""
-    
+
     ffo = "%s:%s" % (user.key(), user.password)
     return ffo
-  
+
   def ffo_cookie (self, user) :
 
     """A helper method to generate the 'ffo' cookie string for a user."""
-    
+
     now = datetime.datetime.fromtimestamp(time.time())
     delta = datetime.timedelta(days=30)
     then = now + delta
     expires = then.strftime("%a, %e-%b-%Y %H:%M:%S GMT")
-    
+
     ffo = self.generate_ffo(user)
     ffo_cookie = "ffo=%s; expires=%s" % (ffo, expires)
     return str(ffo_cookie)
@@ -466,7 +471,7 @@ class FlickrApp (webapp.RequestHandler) :
       fft = "%s-%s-%s" % (self._api_secret, user.token, user.perms)
     else :
       fft = "%s-%s" % (self._api_secret, self.request.remote_addr)
-      
+
     hash = md5.new()
     hash.update(fft)
     return hash.hexdigest()
@@ -514,41 +519,43 @@ class FlickrApp (webapp.RequestHandler) :
 
     """ tbd """
 
-    if user : 
+    if user :
       secret = "%s%s" % (self._api_secret, user.password)
     else :
       secret = "%s%s" % (self._api_secret, self.request.user_agent)
-      
+
     hash = md5.new()
     hash.update(secret)
     hex = hash.hexdigest()
-    
+
     return hex[:8]
-  
+
   def generate_crumb (self, user, path, ttl=30) :
 
     """ tbd """
-    
+
     # ttl is measured in minutes
 
     fft = self.generate_fft(user)
     secret = self.crumb_secret(user)
-      
+
     now = datetime.datetime.fromtimestamp(time.time())
     delta = datetime.timedelta(minutes=ttl)
     then = now + delta
     expires = then.strftime("%s")
 
     crumb = "%s:%s:%s" % (fft, path, expires)
-    
+
     enc = self.encrypt(crumb, secret)
-    return base64.b64encode(enc)
+    b64 = base64.b64encode(enc)
+
+    return b64
 
   def validate_crumb(self, user, path, crumb_b64) :
 
     """ tbd """
-    
-    secret = self.crumb_secret(user)    
+
+    secret = self.crumb_secret(user)
 
     crumb_enc = base64.b64decode(crumb_b64)
     crumb_raw = self.decrypt(crumb_enc, secret)
@@ -566,12 +573,12 @@ class FlickrApp (webapp.RequestHandler) :
 
     if crumb_path != path :
       return False
-    
+
     if (int(crumb_expires) < int(time.time())) :
       return False
 
     return True
-    
+
   def encrypt (self, raw, secret) :
 
     """ tbd """
@@ -580,7 +587,7 @@ class FlickrApp (webapp.RequestHandler) :
     enc = des.encrypt(raw, "*")
 
     return enc
-  
+
   def decrypt (self, enc, secret) :
 
     """ tbd """

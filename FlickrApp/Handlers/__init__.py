@@ -99,14 +99,16 @@ class FlickrAppRequest (FlickrApp) :
   def flickr_get_user_info (self, nsid) :
 
     # note that we use proxy_api_call which is already cached
-    
+
     args = {
       'user_id' : nsid,
-      'auth_token' : self.user.token
       }
-    
+
+    if self.user:
+      args['auth_token'] = self.user.token
+
     rsp = self.proxy_api_call('flickr.people.getInfo', args)
-      
+
     if not rsp or rsp['stat'] != 'ok' :
       return
 
@@ -118,12 +120,12 @@ class FlickrAppRequest (FlickrApp) :
 
       if not user :
         return 'http://www.flickr.com/images/buddyicon.jpg'
-      
+
       if int(user['iconserver']) == 0 :
         return 'http://www.flickr.com/images/buddyicon.jpg'
-      
+
       return "http://farm%s.static.flickr.com/%s/buddyicons/%s.jpg" % (user['iconfarm'], user['iconserver'], nsid)
-    
+
   def flickr_get_pathalias (self, nsid) :
 
       user = self.flickr_get_user_info(nsid)

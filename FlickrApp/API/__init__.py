@@ -34,23 +34,23 @@ class FlickrAppAPI (APIApp.APIApp) :
         if not self.validate_crumb(self.user, path, self.request.get('crumb')) :
             self.api_error(400, 'Invalid crumb')
             return False
-        
+
         return True
-            
+
     def dispatch (self, handlers) :
-        
+
         method = self.request.get('method')
 
         if not handlers.has_key(method) :
             self.api_error(999, 'Unknown method')
             return
-        
+
         format = self.request.get('format')
-        
+
         if format and not format in self.valid_formats :
             self.api_error(999, 'Not a valid format')
             return
-        
+
         if format :
             self.format = format
 
