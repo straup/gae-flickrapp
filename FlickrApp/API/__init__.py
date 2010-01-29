@@ -57,33 +57,33 @@ class FlickrAppAPI (APIApp.APIApp) :
         try :
             m = getattr(self, handlers[ method ])
             m()
-            
+
         except Exception, e :
-            self.api_error(999, 'Dispatch error: %s' % e)
+            self.api_error(999, 'Dispatch error: %s (that sometimes means there was a problem on the AppEngine side of things...)' % e)
             return
-        
+
         return
 
     def echo (self) :
 
         self.api_ok()
         return
-    
+
     def generate_signature (self) :
-        
+
         required = ('crumb',)
 
         skip_list = ('crumb', 'format', 'method')
-        
+
         if not self.ensure_args(required) :
-            return 
+            return
 
         if not self.ensure_crumb('method=signature') :
             return
 
         query = self.request.queryvars
         args = {}
-        
+
         for key, value in query.items() :
 
             if key in skip_list :
