@@ -18,12 +18,32 @@ class FlickrAppRequest (FlickrApp) :
 
     self.config = config
     self.min_perms = config['flickr_minperms']
-    
+
     self.config_pub = copy.deepcopy(config)
-    del(self.config_pub['flickr_apisecret'])  
-    
+    del(self.config_pub['flickr_apisecret'])
+
     self.membership = None
     self.template_values = {}
+
+  def check_useragent(self, **kwargs):
+
+    self.uastring = self.request.headers.get('user_agent')
+
+    self.browser = {
+      'iphone' : False,
+      'mobile' : False,
+    }
+
+    if "Mobile" in self.uastring and "Safari" in self.uastring:
+        self.browser['iphone'] = True
+        self.browser['mobile'] = True
+
+    # self.browser['iphone'] = True
+    # self.browser['mobile'] = True
+
+    if kwargs.get('assign_template_vars', False):
+      self.assign('user_agent', self.uastring)
+      self.assign('browser', self.browser)
 
   def check_logged_in (self, min_perms=None) :
 
@@ -34,39 +54,19 @@ class FlickrAppRequest (FlickrApp) :
 
     if not membership :
       membership = Membership.create(self.user.nsid)
-      
+
     self.membership = membership
     self.has_opted_out = membership.opted_out
 
     return True
-      
+
   def assign (self, key, value) :
     self.template_values[key] = value
-    
+
   def display (self, template_name) :
 
-    #
-    # this should not live here. it is
-    # also incomplete...
-    #
-    
-    uastring = self.request.headers.get('user_agent')
+    self.check_useragent(assign_template_vars=True)
 
-    browser = {
-      'iphone' : False,
-      'mobile' : False,
-    }
-        
-    if "Mobile" in uastring and "Safari" in uastring:
-        browser['iphone'] = True
-        browser['mobile'] = True            
-
-    # browser['iphone'] = True
-    # browser['mobile'] = True            
-
-    self.assign('user_agent', uastring)
-    self.assign('browser', browser)
-    
     #
     # but at least for now, it is and it does...
     #
@@ -82,10 +82,10 @@ class FlickrAppRequest (FlickrApp) :
 
     # this assumes that /templates lives in the same
     # directory as the FlickrApp package itself
-    
+
     root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     path = os.path.join(root, 'templates', template_name)
-    
+
     self.response.out.write(template.render(path, self.template_values))
 
   #
@@ -95,7 +95,7 @@ class FlickrAppRequest (FlickrApp) :
   # that in turn rely on the API secret which is passed in to the object
   # constructor at run-time this is where they'll live for now...
   #
-  
+
   def flickr_get_user_info (self, nsid) :
 
     # note that we use proxy_api_call which is already cached
@@ -134,7 +134,7 @@ class FlickrAppRequest (FlickrApp) :
         return None
 
       url = rsp['person']['photosurl']['_content']
-      
+
       if url.endswith("/") :
         url = url[:-1]
 

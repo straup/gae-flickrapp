@@ -29,7 +29,7 @@ import logging
 class FlickrAppException (Exception) :
   def __init__(self, value):
     self.value = value
-    
+
   def __str__(self):
     return repr(self.value)
 
@@ -48,7 +48,7 @@ class FlickrAppNewUserException (FlickrAppException) :
 #
 
 class FlickrApp (webapp.RequestHandler) :
-  
+
   """FlickrApp is a simple base class to use with Google App Engine (GAE)
   packages that allows you to use Flickr as a Single Sign On (SSO)
   provider and validation service. As an extra bonus you get a Flickr
@@ -58,12 +58,12 @@ class FlickrApp (webapp.RequestHandler) :
   vanilla GAE/Django development environment. The next step is to ensure
   that is works with the AppDrop GAE/EC2 container.
   """
-  
+
   def __init__ (self, api_key, api_secret) :
 
     """
     Create a new FlickrApp object.
-    
+
     Remember, this class is not meant to be used on it's own. Rather
     it is a base class that you subclass in your own application. For
     example:
