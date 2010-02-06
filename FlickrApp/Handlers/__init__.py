@@ -38,8 +38,9 @@ class FlickrAppRequest (FlickrApp) :
         self.browser['iphone'] = True
         self.browser['mobile'] = True
 
-    # self.browser['iphone'] = True
-    # self.browser['mobile'] = True
+    if self.config.get('debug_is_mobile', False):
+      self.browser['iphone'] = True
+      self.browser['mobile'] = True
 
     if kwargs.get('assign_template_vars', False):
       self.assign('user_agent', self.uastring)
