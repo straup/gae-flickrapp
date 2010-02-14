@@ -182,9 +182,9 @@ class FlickrApp (webapp.RequestHandler) :
 
         if not self.check_token(min_perms) :
           return False
-          
+
     # Happy happy
-    
+
     return True
 
   def do_flickr_auth (self, min_perms=None, redir=None) :
@@ -198,7 +198,7 @@ class FlickrApp (webapp.RequestHandler) :
     args = {'api_key' : self._api_key}
 
     extra = []
-    
+
     if redir :
       extra.append('redir=%s' % redir)
     else :
@@ -206,7 +206,7 @@ class FlickrApp (webapp.RequestHandler) :
 
     crumb = self.generate_crumb(None, 'flickrauth', 5)
     extra.append('crumb=%s' % urllib.quote(crumb))
-    
+
     args['extra'] = "&".join(extra)
 
     if min_perms:
@@ -217,13 +217,14 @@ class FlickrApp (webapp.RequestHandler) :
     args['api_sig'] = sig
 
     query = urllib.urlencode(args)
-    url = "http://www.flickr.com/services/auth/?%s" % query    
+
+    url = "http://www.flickr.com/services/auth/?%s" % query
 
     self.redirect(url)
 
   def flickr_sign_args (self, args) :
     return flickr.sign_args(self._api_secret, args)
-    
+
   def do_token_dance (self, **args) :
 
     """
@@ -237,13 +238,13 @@ class FlickrApp (webapp.RequestHandler) :
     If something goes wrong it will return False, otherwise it will
     redirect the user to your application's root URL (where presumably
     you are calling 'checked_logged_in').
-    
+
     For example:
 
     class TokenFrobHandler (FlickrApp) :
 
       # Assume __init__ here
-      
+
       def get (self):
 
         try :
@@ -263,17 +264,17 @@ class FlickrApp (webapp.RequestHandler) :
 
           self.assign('error', 'app_error')
           self.assign('error_message', e)      
-      
+
         except Exception, e:
 
           self.assign('error', 'unknown')      
           self.assign('error_message', e)
-      
+
         self.display("token_dance.html")        
         return
 
     """
-    
+
     frob = self.request.get('frob')
 
     if not frob or frob == '' :
@@ -281,38 +282,34 @@ class FlickrApp (webapp.RequestHandler) :
 
     extra = self.request.get('extra')
     e_params = {}
-  
+
     if extra and extra != '' :
     	extra = urlparse(extra)
         e_params = dict([part.split('=') for part in extra[2].split('&')])
 
-    #
-    
     crumb = urllib.unquote(e_params['crumb'])
-    
+
     if not self.validate_crumb(None, 'flickrauth', crumb) :
         raise FlickrAppCrumbException('Invalid crumb')
 
-    #
-    
     api_args = {'frob': frob, 'check_response' : True}
 
     rsp = self.api_call('flickr.auth.getToken', api_args)
 
     if not rsp :
-        raise FlickrAppAPIException('Failed to get token')    
-        
+        raise FlickrAppAPIException('Failed to get token')
+
     token = rsp['auth']['token']['_content']
     name = rsp['auth']['user']['username']
     nsid = rsp['auth']['user']['nsid']
     perms = rsp['auth']['perms']['_content']
     user_perms = self.perms_map[perms]
-    
+
     user = User.get_user_by_nsid(nsid)
 
     if not user :
-    	if args.has_key('allow_new_users') and not args['allow_new_users'] : 
-            raise FlickrAppNewUserException()        
+    	if args.has_key('allow_new_users') and not args['allow_new_users'] :
+            raise FlickrAppNewUserException()
 
     if not user :
 
@@ -323,27 +320,27 @@ class FlickrApp (webapp.RequestHandler) :
         'nsid' : nsid,
         'perms' : user_perms,
         }
-      
+
         user = User.create(args)
 
     else :
-    
+
     	credentials = {
         'token' : token,
         'perms' : user_perms,
         'username' : name,
         }
-    
+
         User.update_credentials(user, credentials)
 
     self.response.headers.add_header('Set-Cookie', self.ffo_cookie(user))
-    self.response.headers.add_header('Set-Cookie', self.fft_cookie(user))    
+    self.response.headers.add_header('Set-Cookie', self.fft_cookie(user))
 
     if e_params.has_key('redir') :
-    	self.redirect(e_params['redir'])
+    	self.redirect(urllib.unquote(e_params['redir']))
     else :
   	self.redirect("/")
-        
+
   def api_call (self, method, args={}) :
 
     """
