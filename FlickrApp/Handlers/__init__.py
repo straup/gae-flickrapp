@@ -30,17 +30,22 @@ class FlickrAppRequest (FlickrApp) :
     self.uastring = self.request.headers.get('user_agent')
 
     self.browser = {
-      'iphone' : False,
-      'mobile' : False,
+      'iphone' : 0,
+      'ipad' : 0,
+      'mobile' : 0,
     }
 
     if "Mobile" in self.uastring and "Safari" in self.uastring:
-        self.browser['iphone'] = True
-        self.browser['mobile'] = True
+        self.browser['iphone'] = 1
+        self.browser['mobile'] = 1
+
+    if "Mobile" in self.uastring and "iPad" in self.uastring:
+        self.browser['iphone'] = 0
+        self.browser['ipad'] = 1
 
     if self.config.get('debug_is_mobile', False):
-      self.browser['iphone'] = True
-      self.browser['mobile'] = True
+      self.browser['iphone'] = 1
+      self.browser['mobile'] = 1
 
     if kwargs.get('assign_template_vars', False):
       self.assign('user_agent', self.uastring)
