@@ -22,6 +22,13 @@ from FlickrApp.ext.Flickr import API as flickr
 
 import logging
 
+try:
+  # grrrrr.....
+  # https://code.google.com/p/googleappengine/issues/detail?id=985#c20
+  urllib.getproxies_macosx_sysconf = lambda: {}
+except Exception, e:
+  pass
+
 #
 #
 #
