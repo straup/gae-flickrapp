@@ -65,6 +65,10 @@ import mimetypes,urllib,urllib2
 import warnings
 import API
 
+import google.appengine.api.urlfetch as urlfetch
+import StringIO
+
+
 def encode_multipart_formdata(args):
 	""" Encode upload as multipart/form-data. From http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/146306 """
 	BOUNDARY = '----------ThIs_Is_tHe_bouNdaRY_$'
@@ -162,8 +166,11 @@ class API:
 		request.add_data(body)
 		if (request.get_method() != "POST"):
 			raise Exception, "not a POST? Something is wrong here"
-
-		return urllib2.urlopen(request)
+		
+		response = urlfetch.fetch(request.get_full_url(), payload=body, method="POST", headers=headers, deadline=10)
+		content = StringIO.StringIO(response.content)
+		content.code = response.status_code
+		return content
 
 	def get_authurl(self, perms, **kwargs):
 		""" Get a client authentication url for web-based and non-web based clients
